@@ -38,13 +38,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.material.*
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
@@ -57,6 +60,7 @@ import com.raywenderlich.android.librarian.repository.LibrarianRepository
 import com.raywenderlich.android.librarian.ui.books.filter.ByGenre
 import com.raywenderlich.android.librarian.ui.books.filter.ByRating
 import com.raywenderlich.android.librarian.ui.books.filter.Filter
+import com.raywenderlich.android.librarian.ui.composeUi.TopBar
 import com.raywenderlich.android.librarian.utils.toast
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -106,11 +110,20 @@ class BooksFragment : Fragment() {
 
     @Composable
     fun BooksTopBar() {
-        TopAppBar(
-            title = { Text(stringResource(id = R.string.my_books_title)) },
-            backgroundColor = colorResource(id = R.color.colorPrimary),
-            contentColor = Color.White
+        TopBar(
+            title = stringResource(id = R.string.my_books_title),
+            actions = { FilterButton() }
         )
+    }
+
+    @Composable
+    fun FilterButton() {
+        IconButton(onClick = {}) {
+            Icon(
+                imageVector = Icons.Default.Edit,
+                tint = Color.White,
+                contentDescription = "Filter")
+        }
     }
 
     @Composable

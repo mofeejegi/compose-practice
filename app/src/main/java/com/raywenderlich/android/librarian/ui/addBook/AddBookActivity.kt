@@ -44,15 +44,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.MutableLiveData
@@ -62,6 +58,9 @@ import com.raywenderlich.android.librarian.model.Book
 import com.raywenderlich.android.librarian.model.Genre
 import com.raywenderlich.android.librarian.model.state.AddBookState
 import com.raywenderlich.android.librarian.repository.LibrarianRepository
+import com.raywenderlich.android.librarian.ui.composeUi.ActionButton
+import com.raywenderlich.android.librarian.ui.composeUi.InputField
+import com.raywenderlich.android.librarian.ui.composeUi.TopBar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -101,17 +100,9 @@ class AddBookActivity : AppCompatActivity(), AddBookView {
 
     @Composable
     fun AddBookTopBar() {
-        TopAppBar(
-            title = {
-                Text(text = stringResource(id = R.string.add_book_title))
-            },
-            navigationIcon = {
-                IconButton(onClick = { onBackPressed() }) {
-                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
-            contentColor = Color.White,
-            backgroundColor = colorResource(id = R.color.colorPrimary)
+        TopBar(
+            title = stringResource(id = R.string.add_book_title),
+            onBackPressed = { onBackPressed() }
         )
     }
 
@@ -129,28 +120,28 @@ class AddBookActivity : AppCompatActivity(), AddBookView {
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            OutlinedTextField(
+            InputField(
                 value = bookNameState.value,
-                onValueChange = {
+                label = stringResource(id = R.string.book_title_hint),
+                onStateChanged = {
                     bookNameState.value = it
                     _addBookState.value = _addBookState.value?.copy(name = it)
-                },
-                label = { Text(text = stringResource(id = R.string.book_title_hint)) }
-            )
+                })
 
-            OutlinedTextField(
+            InputField(
                 value = bookDescriptionState.value,
-                onValueChange = {
+                label = stringResource(id = R.string.book_description_hint),
+                onStateChanged = {
                     bookDescriptionState.value = it
                     _addBookState.value = _addBookState.value?.copy(description = it)
-                },
-                label = { Text(text = stringResource(id = R.string.book_description_hint)) }
-            )
+                })
 
-            Row {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { isGenresPickerOpen.value = true }) {
                     Text(text = stringResource(id = R.string.genre_select))
                 }
+
+                Text(text = selectedGenreName)
 
                 DropdownMenu(
                     modifier = Modifier.fillMaxWidth(),
@@ -167,9 +158,11 @@ class AddBookActivity : AppCompatActivity(), AddBookView {
                 }
             }
 
-            TextButton(onClick = { onAddBookTapped() }) {
-                Text(text = stringResource(id = R.string.add_book_button_text))
-            }
+            ActionButton(
+                onClick = { onAddBookTapped() },
+                isEnabled = true,
+                text = stringResource(id = R.string.add_book_button_text)
+            )
         }
     }
 
