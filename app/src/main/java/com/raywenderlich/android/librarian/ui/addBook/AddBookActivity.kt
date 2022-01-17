@@ -37,10 +37,29 @@ package com.raywenderlich.android.librarian.ui.addBook
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.raywenderlich.android.librarian.R
 import com.raywenderlich.android.librarian.model.Book
+import com.raywenderlich.android.librarian.model.Genre
 import com.raywenderlich.android.librarian.model.state.AddBookState
 import com.raywenderlich.android.librarian.repository.LibrarianRepository
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,42 +69,139 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AddBookActivity : AppCompatActivity(), AddBookView {
 
-  private val _addBookState = MutableLiveData(AddBookState())
+    private val _addBookState = MutableLiveData(AddBookState())
+    private val _genreState = MutableLiveData(emptyList<Genre>())
 
-  @Inject
-  lateinit var repository: LibrarianRepository
+    @Inject
+    lateinit var repository: LibrarianRepository
 
-  companion object {
-    fun getIntent(context: Context): Intent = Intent(context, AddBookActivity::class.java)
-  }
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-  }
-
-  fun onAddBookTapped() {
-    val bookState = _addBookState.value ?: return
-
-    if (bookState.name.isNotEmpty() &&
-      bookState.description.isNotEmpty() &&
-      bookState.genreId.isNotEmpty()
-    ) {
-      lifecycleScope.launch {
-        repository.addBook(
-          Book(
-            name = bookState.name,
-            description = bookState.description,
-            genreId = bookState.genreId
-          )
-        )
-
-        onBookAdded()
-      }
+    companion object {
+        fun getIntent(context: Context): Intent = Intent(context, AddBookActivity::class.java)
     }
-  }
 
-  override fun onBookAdded() {
-    setResult(RESULT_OK)
-    finish()
-  }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent { AddBookContent() }
+
+        loadGenres()
+    }
+
+    private fun loadGenres() {
+        lifecycleScope.launch {
+            _genreState.value = repository.getGenres()
+        }
+    }
+
+    @Composable
+    private fun AddBookContent() {
+        Scaffold(topBar = { AddBookTopBar() }) {
+            AddBookFormContent()
+        }
+    }
+
+    @Composable
+    fun AddBookTopBar() {
+        TopAppBar(
+            title = {
+                Text(text = stringResource(id = R.string.add_book_title))
+            },
+            navigationIcon = {
+                IconButton(onClick = { onBackPressed() }) {
+                    Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+            },
+            contentColor = Color.White,
+            backgroundColor = colorResource(id = R.color.colorPrimary)
+        )
+    }
+
+    @Composable
+    fun AddBookFormContent() {
+        val genres = _genreState.value ?: emptyList()
+        val isGenresPickerOpen = remember { mutableStateOf(false) }
+        val bookNameState = remember { mutableStateOf("") }
+        val bookDescriptionState = remember { mutableStateOf("") }
+        val selectedGenreName =
+            genres.firstOrNull { it.id == _addBookState.value?.genreId }?.name ?: "None"
+
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            OutlinedTextField(
+                value = bookNameState.value,
+                onValueChange = {
+                    bookNameState.value = it
+                    _addBookState.value = _addBookState.value?.copy(name = it)
+                },
+                label = { Text(text = stringResource(id = R.string.book_title_hint)) }
+            )
+
+            OutlinedTextField(
+                value = bookDescriptionState.value,
+                onValueChange = {
+                    bookDescriptionState.value = it
+                    _addBookState.value = _addBookState.value?.copy(description = it)
+                },
+                label = { Text(text = stringResource(id = R.string.book_description_hint)) }
+            )
+
+            Row {
+                TextButton(onClick = { isGenresPickerOpen.value = true }) {
+                    Text(text = stringResource(id = R.string.genre_select))
+                }
+
+                DropdownMenu(
+                    modifier = Modifier.fillMaxWidth(),
+                    expanded = isGenresPickerOpen.value,
+                    onDismissRequest = { isGenresPickerOpen.value = false }) {
+                    for (genre in genres) {
+                        DropdownMenuItem(onClick = {
+                            _addBookState.value = _addBookState.value?.copy(genreId = genre.id)
+                            isGenresPickerOpen.value = false
+                        }) {
+                            Text(text = genre.name)
+                        }
+                    }
+                }
+            }
+
+            TextButton(onClick = { onAddBookTapped() }) {
+                Text(text = stringResource(id = R.string.add_book_button_text))
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun Preview() {
+        AddBookContent()
+    }
+
+    fun onAddBookTapped() {
+        val bookState = _addBookState.value ?: return
+
+        if (bookState.name.isNotEmpty() &&
+            bookState.description.isNotEmpty() &&
+            bookState.genreId.isNotEmpty()
+        ) {
+            lifecycleScope.launch {
+                repository.addBook(
+                    Book(
+                        name = bookState.name,
+                        description = bookState.description,
+                        genreId = bookState.genreId
+                    )
+                )
+
+                onBookAdded()
+            }
+        }
+    }
+
+    override fun onBookAdded() {
+        setResult(RESULT_OK)
+        finish()
+    }
 }
